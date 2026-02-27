@@ -68,76 +68,59 @@ const docentes = {
         },
     },
     template: `
-        <div class="row">
-            <div class="col-6">
-                <form id="frmDocentes" @submit.prevent="guardarDocente" @reset.prevent="limpiarFormulario">
-                    <div class="card text-bg-secondary mb-3" style="max-width: 38rem;">
-                        <div class="card-header">REGISTRO DE DOCENTES</div>
-                        <div class="card-body">
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    CODIGO:
-                                </div>
-                                <div class="col-3">
-                                    <input placeholder="codigo" required v-model="docente.codigo" type="text" class="form-control">
-                                </div>
-                            </div>
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    NOMBRE:
-                                </div>
-                                <div class="col-6">
-                                    <input placeholder="nombre" required v-model="docente.nombre" type="text" class="form-control">
-                                </div>
-                            </div>
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    DIRECCION:
-                                </div>
-                                <div class="col-9">
-                                    <input placeholder="direccion" required v-model="docente.direccion" type="text" class="form-control">
-                                </div>
-                            </div>
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    EMAIL:
-                                </div>
-                                <div class="col-6">
-                                    <input placeholder="email" required v-model="docente.email" type="text" class="form-control">
-                                </div>
-                            </div>
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    TELEFONO:
-                                </div>
-                                <div class="col-4">
-                                    <input placeholder="telefono" required v-model="docente.telefono" type="text" class="form-control">
-                                </div>
-                            </div>
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    ESCALAFON:
-                                </div>
-                                <div class="col-4">
-                                    <select required title="Seleccione un escalafon" v-model="docente.escalafon" class="form-select">
-                                        <option value="tecnico">Tecnico</option>
-                                        <option value="profesor">Profesor</option>
-                                        <option value="ingeniero">Licenciado/Ingeniero</option>
-                                        <option value="maestria">Maestria</option>
-                                        <option value="doctor">Doctor</option>
-                                    </select>
-                                </div>
-                            </div>
+        <div class="row justify-content-center view-enter">
+            <div class="col-12 col-lg-10">
+                <form id="frmDocentes" @submit.prevent="guardarDocente" @reset.prevent="limpiarFormulario" class="glass-card">
+                    <div class="card-header">
+                        <i class="bi bi-person-workspace me-2"></i>REGISTRO DE DOCENTES
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small fw-bold">CÓDIGO</label>
+                            <input placeholder="DOC-001" required v-model="docente.codigo" type="text" class="form-control">
                         </div>
-                        <div class="card-footer">
-                            <div class="row">
-                                <div class="col text-center">
-                                    <button type="submit" id="btnGuardarDocente" class="btn btn-primary">GUARDAR</button>
-                                    <button type="reset" id="btnCancelarDocente" class="btn btn-warning">NUEVO</button>
-                                    <button type="button" @click="buscarDocente" id="btnBuscarDocente" class="btn btn-success">BUSCAR</button>
-                                </div>
-                            </div>
+                        <div class="col-md-8">
+                            <label class="form-label text-secondary small fw-bold">NOMBRE DEL DOCENTE</label>
+                            <input placeholder="Nombre completo" required v-model="docente.nombre" type="text" class="form-control">
                         </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label text-secondary small fw-bold">DIRECCIÓN</label>
+                            <input placeholder="Dirección de contacto" required v-model="docente.direccion" type="text" class="form-control">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary small fw-bold">EMAIL</label>
+                            <input placeholder="correo@institucion.edu" required v-model="docente.email" type="email" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-secondary small fw-bold">TELÉFONO</label>
+                            <input placeholder="0000-0000" required v-model="docente.telefono" type="text" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-secondary small fw-bold">ESCALAFÓN</label>
+                            <select required v-model="docente.escalafon" class="form-select fw-semibold">
+                                <option value="" disabled>Seleccione...</option>
+                                <option value="tecnico">Técnico</option>
+                                <option value="profesor">Profesor</option>
+                                <option value="ingeniero">Licenciado/Ingeniero</option>
+                                <option value="maestria">Maestría</option>
+                                <option value="doctor">Doctor</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 d-flex gap-2 justify-content-center">
+                        <button type="submit" class="btn btn-primary px-5">
+                            <i class="bi bi-save me-2"></i>GUARDAR
+                        </button>
+                        <button type="reset" class="btn btn-warning px-4">
+                             <i class="bi bi-plus-circle me-2"></i>NUEVO
+                        </button>
+                        <button type="button" @click="buscarDocente" class="btn btn-success px-4">
+                            <i class="bi bi-search me-2"></i>BUSCAR
+                        </button>
                     </div>
                 </form>
             </div>

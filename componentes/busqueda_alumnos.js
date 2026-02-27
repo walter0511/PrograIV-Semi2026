@@ -24,37 +24,50 @@ const busqueda_alumnos = {
         },
     },
     template: `
-        <div class="row">
-            <div class="col-6">
-                <table class="table table-striped table-hover" id="tblAlumnos">
-                    <thead>
-                        <tr>
-                            <th colspan="6">
-                                <input autocomplete="off" type="search" @keyup="obtenerAlumnos()" v-model="buscar" placeholder="Buscar alumno" class="form-control">
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>CODIGO</th>
-                            <th>NOMBRE</th>
-                            <th>DIRECCION</th>
-                            <th>EMAIL</th>
-                            <th>TELEFONO</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="alumno in alumnos" :key="alumno.idAlumno" @click="modificarAlumno(alumno)">
-                            <td>{{ alumno.codigo }}</td>
-                            <td>{{ alumno.nombre }}</td>
-                            <td>{{ alumno.direccion }}</td>
-                            <td>{{ alumno.email }}</td>
-                            <td>{{ alumno.telefono }}</td>
-                            <td>
-                                <button class="btn btn-danger" @click="eliminarAlumno(alumno.idAlumno, $event)">DEL</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="row justify-content-center view-enter">
+            <div class="col-12">
+                <div class="glass-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people me-2"></i>LISTADO DE ALUMNOS</span>
+                        <div class="w-50">
+                            <input autocomplete="off" type="search" @keyup="obtenerAlumnos()" v-model="buscar" placeholder="🔍 Buscar por nombre o código..." class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tblAlumnos">
+                            <thead>
+                                <tr>
+                                    <th>CÓDIGO</th>
+                                    <th>NOMBRE COMPLETO</th>
+                                    <th>DIRECCIÓN</th>
+                                    <th>EMAIL</th>
+                                    <th>TELÉFONO</th>
+                                    <th class="text-center">ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="alumno in alumnos" :key="alumno.idAlumno" @click="modificarAlumno(alumno)">
+                                    <td><span class="badge bg-primary">{{ alumno.codigo }}</span></td>
+                                    <td class="fw-bold">{{ alumno.nombre }}</td>
+                                    <td class="text-secondary small">{{ alumno.direccion }}</td>
+                                    <td>{{ alumno.email }}</td>
+                                    <td>{{ alumno.telefono }}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-danger btn-sm" @click.stop="eliminarAlumno(alumno.idAlumno, $event)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="alumnos.length == 0">
+                                    <td colspan="6" class="text-center py-5 text-secondary">
+                                        No se encontraron resultados para su búsqueda
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     `

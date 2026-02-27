@@ -164,79 +164,73 @@ if (this.accion === 'modificar') {
 
 
     template: `
-        <div class="row">
-            <div class="col-8">
-                <div class="card text-bg-secondary mb-3">
-                    <div class="card-header">INSCRIPCIÓN DE MATERIAS</div>
-                    <div class="card-body">
-
-                        <div class="row p-1">
-                            <div class="col-3">CÓDIGO ALUMNO: </div>
-                            <div class="col-4">
-                                <input v-model="inscripcion.codigo_alumno" type="text" class="form-control">
-                            </div>
+        <div class="row justify-content-center view-enter">
+            <div class="col-12 col-lg-10">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <i class="bi bi-pencil-square me-2"></i>INSCRIPCIÓN DE ASIGNATURAS
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small fw-bold">CÓDIGO ALUMNO</label>
+                            <input placeholder="Busque el alumno..." v-model="inscripcion.codigo_alumno" type="text" class="form-control">
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <label class="form-label text-secondary small fw-bold">SELECCIONAR ASIGNATURA</label>
+                            <select v-model="inscripcion.codigo_materia"
+                                    @change="seleccionarMateria"
+                                    class="form-select"
+                                    :disabled="materias.length === 0">
+                                <option value="">-- Elija una materia --</option>
+                                <option v-for="m in materias"
+                                        :key="m.idMateria"
+                                        :value="m.codigo">
+                                    {{ m.codigo }} - {{ m.nombre }} ({{ m.uv }} UV)
+                                </option>
+                            </select>
                         </div>
 
-                        <div class="row p-1">
-                            <div class="col-3">MATERIA: </div>
-                            <div class="col-6">
-                                <select v-model="inscripcion.codigo_materia"
-                                        @change="seleccionarMateria"
-                                        class="form-control"
-                                        :disabled="materias.length === 0">
-                                    <option value="">-- Seleccione Materia --</option>
-                                    <option v-for="m in materias"
-                                            :key="m.idMateria"
-                                            :value="m.codigo">
-                                        {{ m.codigo }} - {{ m.nombre }} ({{ m.uv }} UV)
-                                    </option>
-                                </select>
-                            </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small fw-bold">FECHA DE INSCRIPCIÓN</label>
+                            <input v-model="inscripcion.fecha_inscripcion" type="date" class="form-control">
                         </div>
 
-                        <div class="row p-1">
-                            <div class="col-3">FECHA INSCRIPCIÓN: </div>
-                            <div class="col-4">
-                                <input v-model="inscripcion.fecha_inscripcion" type="date" class="form-control">
-                            </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small fw-bold">CICLO / PERIODO</label>
+                            <select v-model="inscripcion.ciclo_periodo" class="form-select">
+                                <option value="" disabled>Seleccione ciclo...</option>
+                                <option value="Ciclo 1-2026">Ciclo 1-2026</option>
+                                <option value="Ciclo 2-2026">Ciclo 2-2026</option>
+                            </select>
                         </div>
 
-                        <div class="row p-1">
-                            <div class="col-3">Ciclo/Periodo:</div>
-                            <div class="col-4">
-                                <select v-model="inscripcion.ciclo_periodo" class="form-control">
-                                <option value="" disabled>Seleccione ciclo</option>
-                                    <option value="Ciclo 1-2026">Ciclo 1-2026</option>
-                                    <option value="Ciclo 2-2026">Ciclo 2-2026</option>
-                                </select>
-                            </div>
-
-                        <div class="row p-1">
-                            <div class="col-3">ESTADO:</div>
-                            <div class="col-4">
-                                <select v-model="inscripcion.estado" class="form-control">
-                                    <option value="inscrito">Inscrito</option>
-                                    <option value="retirado">Retirado</option>
-                                    <option value="aprobado">Aprobado</option>
-                                </select>
-                            </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small fw-bold">ESTADO INICIAL</label>
+                            <select v-model="inscripcion.estado" class="form-select">
+                                <option value="inscrito">Inscrito</option>
+                                <option value="retirado">Retirado</option>
+                                <option value="aprobado">Aprobado</option>
+                            </select>
                         </div>
 
-                        <div class="row p-1">
-                            <div class="col-3">OBSERVACIONES:</div>
-                            <div class="col-8">
-                                <textarea v-model="inscripcion.observaciones" class="form-control" rows="2"></textarea>
-                            </div>
+                        <div class="col-12">
+                            <label class="form-label text-secondary small fw-bold">OBSERVACIONES ADICIONALES</label>
+                            <textarea v-model="inscripcion.observaciones" class="form-control" rows="2" placeholder="Escriba aquí cualquier detalle relevante..."></textarea>
                         </div>
+                    </div>
 
-                        <div class="row p-1 mt-2">
-                            <div class="col text-center">
-                                <button type="button" @click="guardarInscripcion" class="btn btn-primary">GUARDAR</button>
-                                <button type="button" @click="limpiarFormulario" class="btn btn-warning ms-2">NUEVO</button>
-                                <button type="button" @click="buscarInscripcion" class="btn btn-success ms-2">BUSCAR</button>
-                            </div>
-                        </div>
-
+                    <div class="mt-5 d-flex gap-2 justify-content-center">
+                        <button type="button" @click="guardarInscripcion" class="btn btn-primary px-5">
+                            <i class="bi bi-save me-2"></i>GUARDAR INSCRIPCIÓN
+                        </button>
+                        <button type="button" @click="limpiarFormulario" class="btn btn-warning px-4">
+                            <i class="bi bi-plus-circle me-2"></i>NUEVO
+                        </button>
+                        <button type="button" @click="buscarInscripcion" class="btn btn-success px-4">
+                            <i class="bi bi-search me-2"></i>BUSCAR
+                        </button>
                     </div>
                 </div>
             </div>

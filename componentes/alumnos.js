@@ -55,62 +55,48 @@ const alumnos = {
         },
     },
     template: `
-        <div class="row">
-            <div class="col-6">
-                <form id="frmAlumnos" @submit.prevent="guardarAlumno" @reset.prevent="limpiarFormulario">
-                    <div class="card text-bg-dark mb-3" style="max-width: 36rem;">
-                        <div class="card-header">REGISTRO DE ALUMNOS</div>
-                        <div class="card-body">
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    CODIGO:
-                                </div>
-                                <div class="col-3">
-                                    <input placeholder="codigo" required v-model="alumno.codigo" type="text" class="form-control">
-                                </div>
-                            </div>
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    NOMBRE:
-                                </div>
-                                <div class="col-6">
-                                    <input placeholder="nombre" required v-model="alumno.nombre" type="text" class="form-control">
-                                </div>
-                            </div>
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    DIRECCION:
-                                </div>
-                                <div class="col-9">
-                                    <input placeholder="direccion" required v-model="alumno.direccion" type="text" class="form-control">
-                                </div>
-                            </div>
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    EMAIL:
-                                </div>
-                                <div class="col-6">
-                                    <input placeholder="email" required v-model="alumno.email" type="text" class="form-control">
-                                </div>
-                            </div>
-                            <div class="row p-1">
-                                <div class="col-3">
-                                    TELEFONO:
-                                </div>
-                                <div class="col-4">
-                                    <input placeholder="telefono" required v-model="alumno.telefono" type="text" class="form-control">
-                                </div>
-                            </div>
+        <div class="row justify-content-center view-enter">
+            <div class="col-12 col-lg-10">
+                <form id="frmAlumnos" @submit.prevent="guardarAlumno" @reset.prevent="limpiarFormulario" class="glass-card">
+                    <div class="card-header">
+                        <i class="bi bi-person-plus me-2"></i>REGISTRO DE ALUMNOS
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small fw-bold">CÓDIGO</label>
+                            <input placeholder="Ej: USSS02223" required v-model="alumno.codigo" type="text" class="form-control">
                         </div>
-                        <div class="card-footer">
-                            <div class="row">
-                                <div class="col text-center">
-                                    <button type="submit" id="btnGuardarAlumno" class="btn btn-primary">GUARDAR</button>
-                                    <button type="reset" id="btnCancelarAlumno" class="btn btn-warning">NUEVO</button>
-                                    <button type="button" @click="buscarAlumnos" id="btnBuscarAlumno" class="btn btn-success">BUSCAR</button>
-                                </div>
-                            </div>
+                        <div class="col-md-8">
+                            <label class="form-label text-secondary small fw-bold">NOMBRE COMPLETO</label>
+                            <input placeholder="Nombre del alumno" required v-model="alumno.nombre" type="text" class="form-control">
                         </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label text-secondary small fw-bold">DIRECCIÓN</label>
+                            <input placeholder="Dirección de residencia" required v-model="alumno.direccion" type="text" class="form-control">
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <label class="form-label text-secondary small fw-bold">EMAIL</label>
+                            <input placeholder="correo@ugb.edu.sv" required v-model="alumno.email" type="email" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small fw-bold">TELÉFONO</label>
+                            <input placeholder="0000-0000" required v-model="alumno.telefono" type="text" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="mt-5 d-flex gap-2 justify-content-center">
+                        <button type="submit" class="btn btn-primary px-5">
+                            <i class="bi bi-save me-2"></i>GUARDAR
+                        </button>
+                        <button type="reset" class="btn btn-warning px-4">
+                            <i class="bi bi-plus-circle me-2"></i>NUEVO
+                        </button>
+                        <button type="button" @click="buscarAlumnos" class="btn btn-success px-4">
+                            <i class="bi bi-search me-2"></i>BUSCAR
+                        </button>
                     </div>
                 </form>
             </div>

@@ -1,6 +1,5 @@
 const { createApp } = Vue,
-    Dexie = window.Dexie,
-    sha256 = CryptoJS.SHA256;
+    Dexie = window.Dexie;
 
      window.db = new Dexie("db_academica");
     window.db.version(2).stores({
