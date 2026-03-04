@@ -1,71 +1,44 @@
-const { createApp } = Vue;
+const { createApp } = Vue,
+    Dexie = window.Dexie;
+
+window.db = new Dexie("db_Usss020224");
+window.db.version(2).stores({
+    autores: "++idAutor,codigo,nombre,pais,telefono",
+    libros: "++idLibro,idAutor,titulo,isbn,editorial,edicion",
+});
 
 createApp({
-    data() {
-        return {
-            alumno: {
-                codigo: "", nombre: "", direccion: "", municipio: "",
-                departamento: "", telefono: "", fechaNacimiento: "",
-                sexo: "", email: ""
-            },
-            accion: 'nuevo',
-            id: 0,
-            buscar: '',
-            alumnos: []
+    components:{
+        autores,
+        busqueda_autores,
+        libros,
+        busqueda_libros 
+    },
+    data(){
+        return{
+            forms:{
+                autores:{mostrar:false},
+                busqueda_autores:{mostrar:false},
+                libros:{mostrar:false},
+                busqueda_libros:{mostrar:false}
+            }
         }
     },
-    methods: {
-        obtenerAlumnos() {
-            let n = localStorage.length;
-            this.alumnos = [];
-            for (let i = 0; i < n; i++) {
-                let key = localStorage.key(i);
-                if (!isNaN(key)) {
-                    let data = JSON.parse(localStorage.getItem(key));
-                    if (data.nombre.toUpperCase().includes(this.buscar.toUpperCase()) ||
-                        data.codigo.toUpperCase().includes(this.buscar.toUpperCase())) {
-                        this.alumnos.push(data);
-                    }
-                }
-            }
+    methods:{
+        buscar(ventana, metodo){
+            this.$refs[ventana][metodo]();
         },
-        eliminarAlumno(id, e) {
-            e.stopPropagation();
-            if (confirm("¿Está seguro de eliminar este registro?")) {
-                localStorage.removeItem(id);
-                this.obtenerAlumnos();
-                if(this.id === id) this.limpiarFormulario();
-            }
-        },
-        modificarAlumno(alumno) {
-            this.accion = 'modificar';
-            this.id = alumno.id;
-            // Copiamos los datos al formulario
-            Object.assign(this.alumno, alumno);
-        },
-        guardarAlumno() {
-            let currentId = this.accion == 'modificar' ? this.id : new Date().getTime();
-            let datos = { id: currentId, ...this.alumno };
+        abrirVentana(ventana){
+            const estadoActual = this.forms[ventana].mostrar;
 
-            if(this.accion == 'nuevo' && this.buscarAlumno(datos.codigo)) {
-                alert("Este código ya pertenece a otro alumno.");
-                return;
-            }
+            Object.keys(this.forms).forEach(key => {
+                this.forms[key].mostrar = false;
+            });
 
-            localStorage.setItem(currentId, JSON.stringify(datos));
-            this.limpiarFormulario();
-            this.obtenerAlumnos();
+            this.forms[ventana].mostrar = !estadoActual;
         },
-        limpiarFormulario() {
-            this.accion = 'nuevo';
-            this.id = 0;
-            Object.keys(this.alumno).forEach(key => this.alumno[key] = "");
-        },
-        buscarAlumno(codigo) {
-            return this.alumnos.find(a => a.codigo.trim().toUpperCase() === codigo.trim().toUpperCase());
+        modificar(ventana, metodo, data){
+            this.$refs[ventana][metodo](data);
         }
     },
-    mounted() {
-        this.obtenerAlumnos();
-    }
 }).mount("#app");
