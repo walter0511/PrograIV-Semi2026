@@ -10,7 +10,6 @@ const autores = {
                 telefono:""
             },
             accion:'nuevo',
-            idAutor:0,
             data_autores_:[]
         }
     },
@@ -54,10 +53,10 @@ const autores = {
     template: `
         <div class="row justify-content-center view-enter">
             <div class="col-12 col-lg-10">
-                <div class="card shadow-sm border-0">
+                <div class="card shadow border-0">
                     <div class="card-header bg-primary text-white py-3">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-person-plus me-2"></i>REGISTRO DE AUTORES
+                            <i class="bi bi-person-plus me-2"></i>REGISTRO DE AUTOR
                         </h5>
                     </div>
                     <div class="card-body p-4">
@@ -78,16 +77,16 @@ const autores = {
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">TELÉFONO</label>
-                                    <input placeholder="0000-0000" required v-model="autor.telefono" type="text" class="form-control">
+                                    <label class="form-label fw-bold">TELÉFONO (8 dígitos)</label>
+                                    <input placeholder="00000000" required v-model="autor.telefono" type="text" maxlength="8" pattern="[0-9]{8}" class="form-control" title="Debe ingresar exactamente 8 dígitos">
                                 </div>
                             </div>
 
-                            <div class="mt-4 d-flex gap-2 justify-content-end">
-                                <button type="reset" class="btn btn-outline-secondary px-4">
+                            <div class="mt-5 d-flex gap-2 justify-content-end">
+                                <button type="reset" class="btn btn-outline-light px-4">
                                     <i class="bi bi-plus-circle me-2"></i>NUEVO
                                 </button>
-                                <button type="button" @click="buscarAutores" class="btn btn-success px-4">
+                                <button type="button" @click="buscarAutores" class="btn btn-outline-success px-4">
                                     <i class="bi bi-search me-2"></i>BUSCAR
                                 </button>
                                 <button type="submit" class="btn btn-primary px-5">
