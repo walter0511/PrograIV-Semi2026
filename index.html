@@ -32,7 +32,7 @@
                 </div>
             </div>
         </nav>
-        <div id="appSistema" class="container py-4">
+        <div id="appSistema" class="container py-4">    
             <autores @buscar='buscar("busqueda_autores","obtenerAutores")' :forms="forms" ref="autores" v-show="forms.autores.mostrar"></autores>
             <busqueda_autores @modificar='modificar("autores","modificarAutor", $event)' ref="busqueda_autores" v-show="forms.busqueda_autores.mostrar"></busqueda_autores>
             <libros @buscar='buscar("busqueda_libros","obtenerLibros")' :forms="forms" ref="libros" v-show="forms.libros.mostrar"></libros>
