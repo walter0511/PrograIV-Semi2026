@@ -77,8 +77,8 @@ const autores = {
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">TELÉFONO (8 dígitos)</label>
-                                    <input placeholder="00000000" required v-model="autor.telefono" type="text" maxlength="8" pattern="[0-9]{8}" class="form-control" title="Debe ingresar exactamente 8 dígitos">
+                                    <label class="form-label fw-bold">TELÉFONO</label>
+                                    <input placeholder="Ej: 1234567890" required v-model="autor.telefono" type="text" maxlength="15" class="form-control">
                                 </div>
                             </div>
 

@@ -14,6 +14,7 @@ const busqueda_autores = {
                 autor => autor.codigo.toLowerCase().includes(this.buscar.toLowerCase()) 
                     || autor.nombre.toLowerCase().includes(this.buscar.toLowerCase())
                     || autor.pais.toLowerCase().includes(this.buscar.toLowerCase())
+                    || (autor.telefono && autor.telefono.toLowerCase().includes(this.buscar.toLowerCase()))
             ).toArray();
         },
         async eliminarAutor(idAutor, e){
@@ -28,11 +29,11 @@ const busqueda_autores = {
     template: `
         <div class="row justify-content-center view-enter">
             <div class="col-12">
-                <div class="glass-card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-people me-2"></i>LISTADO DE AUTORES</span>
+                <div class="card shadow border-0">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white py-3">
+                        <span class="mb-0 fw-bold"><i class="bi bi-people me-2"></i>LISTADO DE AUTORES</span>
                         <div class="w-50">
-                            <input autocomplete="off" type="search" @keyup="obtenerAutores()" v-model="buscar" placeholder="🔍 Buscar por nombre, código o país..." class="form-control">
+                            <input autocomplete="off" type="search" @keyup="obtenerAutores()" v-model="buscar" placeholder="🔍 Buscar por nombre, código, país o teléfono..." class="form-control form-control-sm border-0 shadow-sm">
                         </div>
                     </div>
                     

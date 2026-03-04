@@ -77,11 +77,6 @@ const libros = {
                     <div class="card-body p-4">
                         <form id="frmLibros" @submit.prevent="guardarLibro" @reset.prevent="limpiarFormulario">
                             <div class="row g-3">
-                                <div class="col-md-12">
-                                    <label class="form-label fw-bold">TÍTULO DEL LIBRO</label>
-                                    <input placeholder="Título de la obra" required v-model="libro.titulo" type="text" class="form-control">
-                                </div>
-                                
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">AUTOR</label>
                                     <select required v-model="libro.idAutor" class="form-select" @focus="obtenerAutores">
@@ -95,6 +90,11 @@ const libros = {
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">ISBN(codigo)</label>
                                     <input placeholder="Ej: 978-3-16-148410-0" required v-model="libro.isbn" type="text" class="form-control">
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">TÍTULO DEL LIBRO</label>
+                                    <input placeholder="Título de la obra" required v-model="libro.titulo" type="text" class="form-control">
                                 </div>
 
                                 <div class="col-md-6">
