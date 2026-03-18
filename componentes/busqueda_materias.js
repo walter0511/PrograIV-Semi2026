@@ -10,10 +10,12 @@ const busqueda_materias = {
             this.$emit('modificar', materia);
         },
         async obtenerMaterias(){
-            this.materias = await db.materias.orderBy('codigo').filter(
-                materia => materia.codigo.toLowerCase().includes(this.buscar.toLowerCase()) 
-                    || materia.nombre.toLowerCase().includes(this.buscar.toLowerCase())
-            ).toArray();
+            let buscar = (this.buscar || '').toLowerCase();
+            this.materias = await db.materias.orderBy('codigo').filter(materia => {
+                let codigo = (materia.codigo || '').toLowerCase();
+                let nombre = (materia.nombre || '').toLowerCase();
+                return codigo.includes(buscar) || nombre.includes(buscar);
+            }).toArray();
         },
         async eliminarMateria(materia, e){
             e.stopPropagation();

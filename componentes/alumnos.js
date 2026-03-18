@@ -1,5 +1,5 @@
 const alumnos = {
-    props: ['forms'],
+    props:['forms'],
     data(){
         return{
             alumno:{
@@ -12,34 +12,64 @@ const alumnos = {
             },
             accion:'nuevo',
             idAlumno:0,
-            data_alumnos_:[]
+            data_alumnos:[]
         }
     },
     methods:{
-        buscarAlumnos(){
+        buscarAlumno(){
             this.forms.busqueda_alumnos.mostrar = !this.forms.busqueda_alumnos.mostrar;
             this.$emit('buscar');
         },
-        modificarAlumno(alumno){ 
+        modificarAlumno(alumno){
             this.accion = 'modificar';
             this.idAlumno = alumno.idAlumno;
             this.alumno.codigo = alumno.codigo;
             this.alumno.nombre = alumno.nombre;
             this.alumno.direccion = alumno.direccion;
-            this.alumno.email = alumno.email;
             this.alumno.telefono = alumno.telefono;
+            this.alumno.email = alumno.email;
         },
         async guardarAlumno() {
-            let datos = {
-                idAlumno: this.accion=='modificar' ? this.idAlumno : this.getId(),
-                codigo: this.alumno.codigo,
-                nombre: this.alumno.nombre,
-                direccion: this.alumno.direccion,
-                email: this.alumno.email,
-                telefono: this.alumno.telefono
-            };
-            db.alumnos.put(datos);
-            this.limpiarFormulario();
+            try {
+                let datos = {
+                    idAlumno: this.accion=='modificar' ? this.idAlumno : this.getId(),
+                    codigo: this.alumno.codigo,
+                    nombre: this.alumno.nombre,
+                    direccion: this.alumno.direccion,
+                    email: this.alumno.email,
+                    telefono: this.alumno.telefono
+                };
+
+                // Verificar duplicado buscando en todos los registros
+                if(this.accion == 'nuevo'){
+                    let todos = await db.alumnos.toArray();
+                    let existe = todos.find(a => a.codigo === datos.codigo);
+                    if(existe){
+                        alertify.error(`El codigo ya existe: ${existe.nombre}`);
+                        return;
+                    }
+                }
+
+                datos.hash = sha256(JSON.stringify(datos));
+                await db.alumnos.put(datos);
+
+                // Sincronizar con servidor (si falla no afecta el guardado local)
+                fetch(`private/modulos/alumnos/alumno.php?accion=${this.accion}&alumnos=${encodeURIComponent(JSON.stringify(datos))}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if(data != true && data?.msg !== 'ok') {
+                            alertify.error(`Error al sincronizar: ${data?.msg || 'Datos inválidos'}`);
+                        }
+                    })
+                    .catch(() => {});
+
+                this.limpiarFormulario();
+                alertify.success(`${datos.nombre} guardado correctamente`);
+
+            } catch(err) {
+                alertify.error(`Error al guardar: ${err.message}`);
+                console.error('guardarAlumno error:', err);
+            }
         },
         getId(){
             return new Date().getTime();
@@ -55,48 +85,62 @@ const alumnos = {
         },
     },
     template: `
-        <div class="row justify-content-center view-enter">
-            <div class="col-12 col-lg-10">
-                <form id="frmAlumnos" @submit.prevent="guardarAlumno" @reset.prevent="limpiarFormulario" class="glass-card">
-                    <div class="card-header">
-                        <i class="bi bi-person-plus me-2"></i>REGISTRO DE ALUMNOS
-                    </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label text-secondary small fw-bold">CÓDIGO</label>
-                            <input placeholder="Ej: USSS02223" required v-model="alumno.codigo" type="text" class="form-control">
+        <div class="row">
+            <div class="col-6">
+                <form id="frmAlumnos" @submit.prevent="guardarAlumno" @reset.prevent="limpiarFormulario">
+                    <div class="card text-bg-dark mb-3" style="max-width: 36rem;">
+                        <div class="card-header">REGISTRO DE ALUMNOS</div>
+                        <div class="card-body">
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    CODIGO:
+                                </div>
+                                <div class="col-3">
+                                    <input placeholder="codigo" required v-model="alumno.codigo" type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    NOMBRE:
+                                </div>
+                                <div class="col-6">
+                                    <input placeholder="nombre" required v-model="alumno.nombre" type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    DIRECCION:
+                                </div>
+                                <div class="col-9">
+                                    <input placeholder="direccion" required v-model="alumno.direccion" type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    EMAIL:
+                                </div>
+                                <div class="col-6">
+                                    <input placeholder="email" required v-model="alumno.email" type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    TELEFONO:
+                                </div>
+                                <div class="col-4">
+                                    <input placeholder="telefono" required v-model="alumno.telefono" type="text" class="form-control">
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-8">
-                            <label class="form-label text-secondary small fw-bold">NOMBRE COMPLETO</label>
-                            <input placeholder="Nombre del alumno" required v-model="alumno.nombre" type="text" class="form-control">
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col text-center">
+                                    <button type="submit" id="btnGuardarAlumno" class="btn btn-primary">GUARDAR</button>
+                                    <button type="reset" id="btnCancelarAlumno" class="btn btn-warning">NUEVO</button>
+                                    <button type="button" @click="buscarAlumno" id="btnBuscarAlumno" class="btn btn-success">BUSCAR</button>
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div class="col-12">
-                            <label class="form-label text-secondary small fw-bold">DIRECCIÓN</label>
-                            <input placeholder="Dirección de residencia" required v-model="alumno.direccion" type="text" class="form-control">
-                        </div>
-                        
-                        <div class="col-md-8">
-                            <label class="form-label text-secondary small fw-bold">EMAIL</label>
-                            <input placeholder="correo@ugb.edu.sv" required v-model="alumno.email" type="email" class="form-control">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-secondary small fw-bold">TELÉFONO</label>
-                            <input placeholder="0000-0000" required v-model="alumno.telefono" type="text" class="form-control">
-                        </div>
-                    </div>
-
-                    <div class="mt-5 d-flex gap-2 justify-content-center">
-                        <button type="submit" class="btn btn-primary px-5">
-                            <i class="bi bi-save me-2"></i>GUARDAR
-                        </button>
-                        <button type="reset" class="btn btn-warning px-4">
-                            <i class="bi bi-plus-circle me-2"></i>NUEVO
-                        </button>
-                        <button type="button" @click="buscarAlumnos" class="btn btn-success px-4">
-                            <i class="bi bi-search me-2"></i>BUSCAR
-                        </button>
                     </div>
                 </form>
             </div>

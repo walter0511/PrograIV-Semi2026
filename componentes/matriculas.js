@@ -23,12 +23,14 @@ const matriculas = {
             this.idMatricula = matricula.idMatricula;
             this.matricula.codigo_alumno = matricula.codigo_alumno;
             this.matricula.ciclo_periodo = matricula.ciclo_periodo;
+            this.matricula.hash = matricula.hash;
         },
         limpiarFormulario(){
             this.accion = 'nuevo';
             this.idMatricula = '';
             this.matricula.codigo_alumno = '';
             this.matricula.ciclo_periodo = '';
+            this.matricula.hash = '';
         },
         async guardarMatricula(){
 
@@ -60,6 +62,14 @@ const matriculas = {
 
     await db.matriculas.put(datos);
 
+    // Sincronizar con servidor
+    fetch(`private/modulos/matriculas/matricula.php?accion=${this.accion}&matriculas=${encodeURIComponent(JSON.stringify(datos))}`)
+        .then(response => response.json())
+        .then(data => {
+            if(data != true && data?.msg !== 'ok') console.warn('Respuesta servidor matricula:', data);
+        })
+        .catch(() => {});
+
     this.limpiarFormulario();
     alertify.success("Matricula guardada correctamente");
 }
@@ -75,8 +85,12 @@ const matriculas = {
                     
                     <div class="row g-3">
                         <div class="col-12">
+                            <label class="form-label text-secondary small fw-bold">ID MATRÍCULA</label>
+                            <input :placeholder="accion === 'modificar' ? idMatricula.toString() : 'Auto-generado al guardar'" v-model="matricula.idMatricula" type="text" class="form-control">
+                        </div>
+                        <div class="col-12">
                             <label class="form-label text-secondary small fw-bold">CÓDIGO DEL ALUMNO</label>
-                            <input placeholder="Busque el código del alumno" v-model="matricula.codigo_alumno" type="text" class="form-control">
+                            <input placeholder="Ingrese el código del alumno" v-model="matricula.codigo_alumno" type="text" class="form-control">
                         </div>
                         <div class="col-12">
                             <label class="form-label text-secondary small fw-bold">CICLO / PERIODO ACADÉMICO</label>
@@ -85,6 +99,10 @@ const matriculas = {
                                 <option value="Ciclo 1-2026">Ciclo 1-2026</option>
                                 <option value="Ciclo 2-2026">Ciclo 2-2026</option>
                             </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-secondary small fw-bold">HASH</label>
+                            <input :placeholder="matricula.hash ? matricula.hash : 'Generado automáticamente al guardar'" v-model="matricula.hash" type="text" class="form-control" style="font-size:0.75rem; font-family:monospace;">
                         </div>
                     </div>
 
