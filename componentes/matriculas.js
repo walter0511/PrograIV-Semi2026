@@ -40,15 +40,15 @@ const matriculas = {
     }
 
     
-    let alumno = await db.alumnos
-        .where("codigo")
-        .equals(this.matricula.codigo_alumno)
-        .first();
+    /*
+    // Verificar existencia del alumno - El usuario prefiere poder matricular primero
+    let alumno = await db.query("SELECT * FROM alumnos WHERE codigo = ?", [this.matricula.codigo_alumno]);
 
-    if(!alumno){
+    if(alumno.length === 0){
         alertify.error("El alumno no existe, no puede matricularse");
         return;
     }
+    */
 
     let datos = {
         idMatricula: this.accion=='modificar'
@@ -60,7 +60,10 @@ const matriculas = {
 
     datos.hash = sha256(JSON.stringify(datos));
 
-    await db.matriculas.put(datos);
+    await db.exec(`
+        INSERT OR REPLACE INTO matriculas (idMatricula, codigo_alumno, ciclo_periodo, hash)
+        VALUES (?, ?, ?, ?)
+    `, [datos.idMatricula, datos.codigo_alumno, datos.ciclo_periodo, datos.hash]);
 
     // Sincronizar con servidor
     fetch(`private/modulos/matriculas/matricula.php?accion=${this.accion}&matriculas=${encodeURIComponent(JSON.stringify(datos))}`)
@@ -76,48 +79,52 @@ const matriculas = {
     },
 
     template: `
-        <div class="row justify-content-center view-enter">
-            <div class="col-12 col-lg-6">
-                <div class="glass-card">
-                    <div class="card-header">
-                        <i class="bi bi-card-checklist me-2"></i>REGISTRO DE MATRÍCULAS
+        <div class="row">
+            <div class="col-6">
+                <form id="frmMatriculas" @submit.prevent="guardarMatricula" @reset.prevent="limpiarFormulario">
+                    <div class="card text-bg-dark mb-3" style="max-width: 36rem;">
+                        <div class="card-header">REGISTRO DE MATRICULAS</div>
+                        <div class="card-body">
+                            <div class="row p-1">
+                                <div class="col-4">
+                                    ID MATRICULA:
+                                </div>
+                                <div class="col-8">
+                                    <input :placeholder="accion === 'modificar' ? idMatricula.toString() : 'Auto-generado'" v-model="matricula.idMatricula" type="text" class="form-control" readonly>
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-4">
+                                    CODIGO ALUMNO:
+                                </div>
+                                <div class="col-8">
+                                    <input placeholder="codigo alumno" required v-model="matricula.codigo_alumno" type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-4">
+                                    CICLO/PERIODO:
+                                </div>
+                                <div class="col-8">
+                                    <select v-model="matricula.ciclo_periodo" class="form-select" required>
+                                        <option value="" disabled>Seleccione el ciclo...</option>
+                                        <option value="Ciclo 1-2026">Ciclo 1-2026</option>
+                                        <option value="Ciclo 2-2026">Ciclo 2-2026</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col text-center">
+                                    <button type="submit" id="btnGuardarMatricula" class="btn btn-primary">GUARDAR</button>
+                                    <button type="reset" id="btnCancelarMatricula" class="btn btn-warning">NUEVO</button>
+                                    <button type="button" @click="buscarMatricula" id="btnBuscarMatricula" class="btn btn-success">BUSCAR</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label text-secondary small fw-bold">ID MATRÍCULA</label>
-                            <input :placeholder="accion === 'modificar' ? idMatricula.toString() : 'Auto-generado al guardar'" v-model="matricula.idMatricula" type="text" class="form-control">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-secondary small fw-bold">CÓDIGO DEL ALUMNO</label>
-                            <input placeholder="Ingrese el código del alumno" v-model="matricula.codigo_alumno" type="text" class="form-control">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-secondary small fw-bold">CICLO / PERIODO ACADÉMICO</label>
-                            <select v-model="matricula.ciclo_periodo" class="form-select">
-                                <option value="" disabled>Seleccione el ciclo...</option>
-                                <option value="Ciclo 1-2026">Ciclo 1-2026</option>
-                                <option value="Ciclo 2-2026">Ciclo 2-2026</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-secondary small fw-bold">HASH</label>
-                            <input :placeholder="matricula.hash ? matricula.hash : 'Generado automáticamente al guardar'" v-model="matricula.hash" type="text" class="form-control" style="font-size:0.75rem; font-family:monospace;">
-                        </div>
-                    </div>
-
-                    <div class="mt-5 d-flex gap-2 justify-content-center">
-                        <button type="submit" @click="guardarMatricula" class="btn btn-primary px-5">
-                            <i class="bi bi-save me-2"></i>GUARDAR
-                        </button>
-                        <button type="reset" @click="limpiarFormulario" class="btn btn-warning px-4">
-                            <i class="bi bi-plus-circle me-2"></i>NUEVO
-                        </button>
-                        <button type="button" @click="buscarMatricula" class="btn btn-success px-4">
-                            <i class="bi bi-search me-2"></i>BUSCAR
-                        </button>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     `

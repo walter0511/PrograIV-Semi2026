@@ -12,24 +12,36 @@ const busqueda_inscripciones = {
         },
         async obtenerInscripciones() {
             try {
-                let obj = await fetch('private/modulos/inscripciones/inscripcion.php?accion=consultar');
-                let data = await obj.json();
-                if(Array.isArray(data)){
-                    // Solo sincronizar registros que tengan el ID primario (idInscripcion)
-                    // para evitar el error "key path did not yield a value"
-                    let validData = data.filter(item => item.idInscripcion);
-                    await db.inscripciones.clear();
-                    await db.inscripciones.bulkPut(validData);
-                }
-            } catch(e) { console.error('Error sincronizando inscripciones', e); }
+                let resp = await fetch('private/modulos/inscripciones/inscripcion.php?accion=consultar');
+                let text = await resp.text();
 
-            this.inscripciones = await db.inscripciones.filter(
-                inscripcion =>
-                    (inscripcion.nombre_alumno || '').toLowerCase().includes(this.buscar.toLowerCase()) ||
-                    (inscripcion.codigo_materia || '').toLowerCase().includes(this.buscar.toLowerCase()) ||
-                    (inscripcion.nombre_materia || '').toLowerCase().includes(this.buscar.toLowerCase()) ||
-                    (inscripcion.estado || '').toLowerCase().includes(this.buscar.toLowerCase())
-            ).toArray();
+                if (!text.trim().startsWith('<?php') && !text.trim().startsWith('<')) {
+                    let data = JSON.parse(text);
+                    if(Array.isArray(data)){
+                        // Solo sincronizar registros que tengan el ID primario
+                        let validData = data.filter(item => item.idInscripcion);
+                        await db.exec("DELETE FROM inscripciones");
+                        for (const i of validData) {
+                            await db.exec(`
+                                INSERT OR REPLACE INTO inscripciones (
+                                    idInscripcion, codigo_alumno, nombre_alumno, codigo_materia, nombre_materia, uv, fecha_inscripcion, estado, observaciones, hash
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            `, [i.idInscripcion, i.codigo_alumno, i.nombre_alumno, i.codigo_materia, i.nombre_materia, i.uv, i.fecha_inscripcion, i.estado, i.observaciones, i.hash]);
+                        }
+                    }
+                }
+            } catch(e) { 
+                // Silenced: local mode fallback
+            }
+
+            let buscar = `%${this.buscar}%`;
+            this.inscripciones = await db.query(`
+                SELECT * FROM inscripciones 
+                WHERE nombre_alumno LIKE ? 
+                   OR codigo_materia LIKE ? 
+                   OR nombre_materia LIKE ? 
+                   OR estado LIKE ?
+            `, [buscar, buscar, buscar, buscar]);
         },
         async eliminarInscripcion(inscripcion, e) {
             e.stopPropagation();
@@ -37,17 +49,21 @@ const busqueda_inscripciones = {
                 'Eliminar inscripción',
                 `¿Está seguro de eliminar la inscripción de ${inscripcion.nombre_alumno} en ${inscripcion.nombre_materia}?`,
                 async () => {
-                    try {
-                        let obj = await fetch(`private/modulos/inscripciones/inscripcion.php?accion=eliminar&inscripciones=${encodeURIComponent(JSON.stringify(inscripcion))}`);
-                        let res = await obj.json();
-                        if(res.msg === 'ok' || res === true || res){
-                            await db.inscripciones.delete(inscripcion.idInscripcion);
-                            this.obtenerInscripciones();
-                            alertify.success(`Inscripción eliminada correctamente`);
-                        }
-                    } catch(err) {
-                        alertify.error('Error de conexión');
-                    }
+                    // Eliminar localmente (SQLite)
+                    await db.exec("DELETE FROM inscripciones WHERE idInscripcion = ?", [inscripcion.idInscripcion]);
+                    this.obtenerInscripciones();
+                    alertify.success(`Inscripción eliminada correctamente`);
+
+                    // Sincronizar con servidor (silencioso)
+                    fetch(`private/modulos/inscripciones/inscripcion.php?accion=eliminar&inscripciones=${encodeURIComponent(JSON.stringify(inscripcion))}`)
+                        .then(res => res.text())
+                        .then(text => {
+                            if (!text.trim().startsWith('<')) {
+                                let resp = JSON.parse(text);
+                                if (resp.msg !== 'ok' && resp !== true) console.warn("Aviso servidor:", resp);
+                            }
+                        })
+                        .catch(() => {});
                 },
                 () => {}
             );

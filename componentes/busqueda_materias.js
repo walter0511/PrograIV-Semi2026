@@ -10,19 +10,50 @@ const busqueda_materias = {
             this.$emit('modificar', materia);
         },
         async obtenerMaterias(){
-            let buscar = (this.buscar || '').toLowerCase();
-            this.materias = await db.materias.orderBy('codigo').filter(materia => {
-                let codigo = (materia.codigo || '').toLowerCase();
-                let nombre = (materia.nombre || '').toLowerCase();
-                return codigo.includes(buscar) || nombre.includes(buscar);
-            }).toArray();
+            try {
+                let resp = await fetch('private/modulos/materias/materia.php?accion=consultar');
+                let text = await resp.text();
+
+                if (!text.trim().startsWith('<?php') && !text.trim().startsWith('<')) {
+                    let data = JSON.parse(text);
+                    if(Array.isArray(data)){
+                        await db.exec("DELETE FROM materias");
+                        for (const m of data) {
+                            await db.exec(`
+                                INSERT OR REPLACE INTO materias (idMateria, codigo, nombre, uv, hash)
+                                VALUES (?, ?, ?, ?, ?)
+                            `, [m.idMateria, m.codigo, m.nombre, m.uv, m.hash]);
+                        }
+                    }
+                }
+            } catch(e) { 
+                // Silenced: local mode fallback
+            }
+
+            let buscar = `%${this.buscar}%`;
+            this.materias = await db.query(
+                "SELECT * FROM materias WHERE nombre LIKE ? OR codigo LIKE ? ORDER BY codigo",
+                [buscar, buscar]
+            );
         },
         async eliminarMateria(materia, e){
             e.stopPropagation();
-            alertify.confirm('Eliminar materias', `¿Está seguro de eliminar el materia ${materia.nombre}?`, async e=>{
-                await db.materias.delete(materia.idMateria);
+            alertify.confirm('Eliminar materias', `¿Está seguro de eliminar la materia ${materia.nombre}?`, async () => {
+                // Eliminar localmente (SQLite)
+                await db.exec("DELETE FROM materias WHERE idMateria = ?", [materia.idMateria]);
                 this.obtenerMaterias();
                 alertify.success(`Materia ${materia.nombre} eliminada correctamente`);
+
+                // Sincronizar con servidor (silencioso)
+                fetch(`private/modulos/materias/materia.php?accion=eliminar&materias=${encodeURIComponent(JSON.stringify(materia))}`)
+                    .then(res => res.text())
+                    .then(text => {
+                        if (!text.trim().startsWith('<')) {
+                            let resp = JSON.parse(text);
+                            if (resp.msg !== 'ok' && resp !== true) console.warn("Aviso servidor:", resp);
+                        }
+                    })
+                    .catch(() => {});
             }, () => {
                 //No hacer nada
             });

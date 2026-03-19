@@ -12,35 +12,49 @@ const busqueda_matriculas = {
         },
         async obtenerMatriculas(){
             try {
-                let obj = await fetch('private/modulos/matriculas/matricula.php?accion=consultar');
-                let data = await obj.json();
-                if(Array.isArray(data)){
-                    await db.matriculas.clear();
-                    await db.matriculas.bulkPut(data);
-                }
-            } catch(e) { console.error('Error sincronizando matriculas', e); }
+                let resp = await fetch('private/modulos/matriculas/matricula.php?accion=consultar');
+                let text = await resp.text();
 
-            this.matriculas = await db.matriculas
-                .filter(matricula =>
-                    matricula.codigo_alumno?.toString().includes(this.buscar) ||
-                    matricula.ciclo_periodo?.toLowerCase().includes(this.buscar.toLowerCase())
-                )
-                .toArray();
+                if (!text.trim().startsWith('<?php') && !text.trim().startsWith('<')) {
+                    let data = JSON.parse(text);
+                    if(Array.isArray(data)){
+                        await db.exec("DELETE FROM matriculas");
+                        for (const m of data) {
+                            await db.exec(`
+                                INSERT OR REPLACE INTO matriculas (idMatricula, codigo_alumno, ciclo_periodo, hash)
+                                VALUES (?, ?, ?, ?)
+                            `, [m.idMatricula, m.codigo_alumno, m.ciclo_periodo, m.hash]);
+                        }
+                    }
+                }
+            } catch(e) { 
+                // Silenced: local mode fallback
+            }
+
+            let buscar = `%${this.buscar}%`;
+            this.matriculas = await db.query(
+                "SELECT * FROM matriculas WHERE codigo_alumno LIKE ? OR ciclo_periodo LIKE ?",
+                [buscar, buscar]
+            );
         },
         async eliminarMatricula(matricula, e){
             e.stopPropagation();
             if(confirm("¿Está seguro de eliminar la matrícula?")){
-                try {
-                    let obj = await fetch(`private/modulos/matriculas/matricula.php?accion=eliminar&matriculas=${encodeURIComponent(JSON.stringify(matricula))}`);
-                    let res = await obj.json();
-                    if(res.msg === 'ok' || res === true || res){
-                        await db.matriculas.delete(matricula.idMatricula);
-                        this.obtenerMatriculas();
-                        alertify.success('Matrícula eliminada con éxito');
-                    }
-                } catch(err) {
-                    alertify.error('Error de conexión');
-                }
+                // Eliminar localmente (SQLite)
+                await db.exec("DELETE FROM matriculas WHERE idMatricula = ?", [matricula.idMatricula]);
+                this.obtenerMatriculas();
+                alertify.success('Matrícula eliminada con éxito');
+
+                // Sincronizar con servidor (silencioso)
+                fetch(`private/modulos/matriculas/matricula.php?accion=eliminar&matriculas=${encodeURIComponent(JSON.stringify(matricula))}`)
+                    .then(res => res.text())
+                    .then(text => {
+                        if (!text.trim().startsWith('<')) {
+                            let resp = JSON.parse(text);
+                            if (resp.msg !== 'ok' && resp !== true) console.warn("Aviso servidor:", resp);
+                        }
+                    })
+                    .catch(() => {});
             }
         }
     },

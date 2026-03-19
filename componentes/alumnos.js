@@ -40,34 +40,38 @@ const alumnos = {
                     telefono: this.alumno.telefono
                 };
 
-                // Verificar duplicado buscando en todos los registros
+                // Verificar duplicado buscando el código
                 if(this.accion == 'nuevo'){
-                    let todos = await db.alumnos.toArray();
-                    let existe = todos.find(a => a.codigo === datos.codigo);
-                    if(existe){
-                        alertify.error(`El codigo ya existe: ${existe.nombre}`);
+                    let existe = await db.query("SELECT * FROM alumnos WHERE codigo = ?", [datos.codigo]);
+                    if(existe.length > 0){
+                        alertify.error(`El codigo ya existe: ${existe[0].nombre}`);
                         return;
                     }
                 }
 
-                datos.hash = sha256(JSON.stringify(datos));
-                await db.alumnos.put(datos);
+                datos.hash = typeof sha256 !== 'undefined' ? sha256(JSON.stringify(datos)) : '';
+                
+                // Usar INSERT OR REPLACE para simular el comportamiento de put de Dexie
+                await db.exec(`
+                    INSERT OR REPLACE INTO alumnos (idAlumno, codigo, nombre, direccion, email, telefono, hash)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                `, [datos.idAlumno, datos.codigo, datos.nombre, datos.direccion, datos.email, datos.telefono, datos.hash]);
 
                 // Sincronizar con servidor (si falla no afecta el guardado local)
-                fetch(`private/modulos/alumnos/alumno.php?accion=${this.accion}&alumnos=${encodeURIComponent(JSON.stringify(datos))}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if(data != true && data?.msg !== 'ok') {
-                            alertify.error(`Error al sincronizar: ${data?.msg || 'Datos inválidos'}`);
-                        }
-                    })
-                    .catch(() => {});
+                try {
+                    let resp = await fetch(`private/modulos/alumnos/alumno.php?accion=${this.accion}&alumnos=${encodeURIComponent(JSON.stringify(datos))}`);
+                    let data = await resp.json();
+                    if(data != true && data?.msg !== 'ok') {
+                        console.warn(`Aviso de servidor local: ${data?.msg || 'Datos inválidos'}`);
+                    }
+                } catch(e) { /* Servidor local inactivo, podemos ignorar en modo offline */ }
+
 
                 this.limpiarFormulario();
                 alertify.success(`${datos.nombre} guardado correctamente`);
 
             } catch(err) {
-                alertify.error(`Error al guardar: ${err.message}`);
+                alertify.error(`Error al guardar: ${err.message || err}`);
                 console.error('guardarAlumno error:', err);
             }
         },

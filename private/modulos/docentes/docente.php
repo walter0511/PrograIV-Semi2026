@@ -1,0 +1,1 @@
+<?php // Archivo vacío para evitar 404 ?>

@@ -23,18 +23,35 @@ const inscripciones = {
     },
 
     mounted() {
-        this.cargarMaterias();
-        this.cargarAlumnos();
+        // Se omite la carga inicial para evitar el error "DB no inicializada".
+        // La carga ocurre de forma segura cuando el usuario abre la pestaña (ver 'watch' abajo).
+    },
+
+    watch: {
+        'forms.inscripciones.mostrar'(newVal) {
+            if (newVal) {
+                this.cargarMaterias();
+                this.cargarAlumnos();
+            }
+        }
     },
 
     methods: {
 
         async cargarMaterias() {
-            this.materias = await db.materias.toArray();
+            try {
+                this.materias = await db.query("SELECT * FROM materias ORDER BY codigo");
+            } catch (e) {
+                // Silenced: la DB podría no estar lista aún
+            }
         },
 
         async cargarAlumnos() {
-            this.alumnos = await db.alumnos.toArray();
+            try {
+                this.alumnos = await db.query("SELECT * FROM alumnos ORDER BY codigo");
+            } catch (e) {
+                // Silenced
+            }
         },
 
         buscarInscripcion() {
@@ -90,10 +107,8 @@ const inscripciones = {
                     return;
                 }
 
-                let alumno = await db.alumnos
-                    .where("codigo")
-                    .equals(this.inscripcion.codigo_alumno)
-                    .first();
+                let alumnoResult = await db.query("SELECT * FROM alumnos WHERE codigo = ?", [this.inscripcion.codigo_alumno]);
+                let alumno = alumnoResult.length > 0 ? alumnoResult[0] : null;
 
                 if (alumno) {
                     this.inscripcion.nombre_alumno = alumno.nombre;
@@ -101,21 +116,21 @@ const inscripciones = {
                     this.inscripcion.nombre_alumno = 'No asignado';
                 }
 
-                let duplicado = await db.inscripciones
-                    .filter(i =>
-                        i.codigo_alumno === this.inscripcion.codigo_alumno &&
-                        i.codigo_materia === this.inscripcion.codigo_materia
-                    ).toArray();
+                // Verificar duplicado
+                let duplicado = await db.query(
+                    "SELECT * FROM inscripciones WHERE codigo_alumno = ? AND codigo_materia = ?",
+                    [this.inscripcion.codigo_alumno, this.inscripcion.codigo_materia]
+                );
 
                 if (duplicado.length > 0 && this.accion === 'nuevo') {
                     alertify.error('Esta materia ya fue inscrita para este alumno');
                     return;
                 }
 
-                let inscritas = await db.inscripciones
-                    .filter(i =>
-                        i.codigo_alumno === this.inscripcion.codigo_alumno
-                    ).toArray();
+                let inscritas = await db.query(
+                    "SELECT uv FROM inscripciones WHERE codigo_alumno = ?",
+                    [this.inscripcion.codigo_alumno]
+                );
 
                 let totalUV = inscritas.reduce(
                     (acc, item) => acc + (parseInt(item.uv) || 0),
@@ -129,21 +144,25 @@ const inscripciones = {
                     alertify.warning('Alerta: Límite de UV excedido, pero se guardará.');
                 }
 
-                // Asegurar que el ID primario SIEMPRE tenga valor en el objeto original
+                // Asegurar que el ID primario SIEMPRE tenga valor
                 if (this.accion === 'modificar' && this.idInscripcion) {
                     this.inscripcion.idInscripcion = this.idInscripcion.toString();
                 } else {
                     this.inscripcion.idInscripcion = this.getId().toString();
                 }
 
-                // Obtener datos puros para la base de datos
+                // Obtener datos puros
                 let rawData = JSON.parse(JSON.stringify(this.inscripcion));
                 rawData.uv = currentUV;
                 rawData.hash = sha256(JSON.stringify(rawData));
 
-                // Guardar en Dexie con el objeto procesado
-                console.log("Guardando en Dexie:", rawData);
-                await db.inscripciones.put(rawData);
+                // Guardar en SQLite
+                await db.exec(`
+                    INSERT OR REPLACE INTO inscripciones (
+                        idInscripcion, codigo_alumno, nombre_alumno, codigo_materia, nombre_materia, uv, fecha_inscripcion, estado, observaciones, hash
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [rawData.idInscripcion, rawData.codigo_alumno, rawData.nombre_alumno, rawData.codigo_materia, rawData.nombre_materia, rawData.uv, rawData.fecha_inscripcion, rawData.estado, rawData.observaciones, rawData.hash]);
+
 
                 // Sincronizar con servidor usando el objeto ya guardado
                 fetch(`private/modulos/inscripciones/inscripcion.php?accion=${this.accion}&inscripciones=${encodeURIComponent(JSON.stringify(rawData))}`)
@@ -172,71 +191,83 @@ const inscripciones = {
 
 
     template: `
-        <div class="row justify-content-center view-enter">
-            <div class="col-12 col-lg-10">
-                <div class="glass-card">
-                    <div class="card-header">
-                        <i class="bi bi-pencil-square me-2"></i>INSCRIPCIÓN DE ASIGNATURAS
+        <div class="row">
+            <div class="col-8">
+                <form id="frmInscripciones" @submit.prevent="guardarInscripcion" @reset.prevent="limpiarFormulario">
+                    <div class="card text-bg-dark mb-3" style="max-width: 48rem;">
+                        <div class="card-header">INSCRIPCIÓN DE ASIGNATURAS</div>
+                        <div class="card-body">
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    ALUMNO:
+                                </div>
+                                <div class="col-9">
+                                    <select v-model="inscripcion.codigo_alumno" class="form-select" :disabled="alumnos.length === 0" required>
+                                        <option value="">-- Elija un alumno --</option>
+                                        <option v-for="a in alumnos" :key="a.idAlumno" :value="a.codigo">
+                                            {{ a.codigo }} - {{ a.nombre }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    ASIGNATURA:
+                                </div>
+                                <div class="col-9">
+                                    <select v-model="inscripcion.codigo_materia"
+                                            @change="seleccionarMateria"
+                                            class="form-select"
+                                            :disabled="materias.length === 0" required>
+                                        <option value="">-- Elija una materia --</option>
+                                        <option v-for="m in materias"
+                                                :key="m.idMateria"
+                                                :value="m.codigo">
+                                            {{ m.codigo }} - {{ m.nombre }} ({{ m.uv }} UV)
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    FECHA:
+                                </div>
+                                <div class="col-4">
+                                    <input v-model="inscripcion.fecha_inscripcion" type="date" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    ESTADO:
+                                </div>
+                                <div class="col-4">
+                                    <select v-model="inscripcion.estado" class="form-select" required>
+                                        <option value="inscrito">Inscrito</option>
+                                        <option value="retirado">Retirado</option>
+                                        <option value="aprobado">Aprobado</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    OBSERVACIONES:
+                                </div>
+                                <div class="col-9">
+                                    <textarea v-model="inscripcion.observaciones" class="form-control" rows="2" placeholder="Detalles..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col text-center">
+                                    <button type="submit" id="btnGuardarInscripcion" class="btn btn-primary">GUARDAR</button>
+                                    <button type="reset" id="btnCancelarInscripcion" class="btn btn-warning">NUEVO</button>
+                                    <button type="button" @click="buscarInscripcion" id="btnBuscarInscripcion" class="btn btn-success">BUSCAR</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label text-secondary small fw-bold">CÓDIGO ALUMNO</label>
-                            <select v-model="inscripcion.codigo_alumno" class="form-select" :disabled="alumnos.length === 0">
-                                <option value="">-- Elija un alumno --</option>
-                                <option v-for="a in alumnos" :key="a.idAlumno" :value="a.codigo">
-                                    {{ a.codigo }} - {{ a.nombre }}
-                                </option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-8">
-                            <label class="form-label text-secondary small fw-bold">SELECCIONAR ASIGNATURA</label>
-                            <select v-model="inscripcion.codigo_materia"
-                                    @change="seleccionarMateria"
-                                    class="form-select"
-                                    :disabled="materias.length === 0">
-                                <option value="">-- Elija una materia --</option>
-                                <option v-for="m in materias"
-                                        :key="m.idMateria"
-                                        :value="m.codigo">
-                                    {{ m.codigo }} - {{ m.nombre }} ({{ m.uv }} UV)
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label text-secondary small fw-bold">FECHA DE INSCRIPCIÓN</label>
-                            <input v-model="inscripcion.fecha_inscripcion" type="date" class="form-control">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label text-secondary small fw-bold">ESTADO INICIAL</label>
-                            <select v-model="inscripcion.estado" class="form-select">
-                                <option value="inscrito">Inscrito</option>
-                                <option value="retirado">Retirado</option>
-                                <option value="aprobado">Aprobado</option>
-                            </select>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label text-secondary small fw-bold">OBSERVACIONES ADICIONALES</label>
-                            <textarea v-model="inscripcion.observaciones" class="form-control" rows="2" placeholder="Escriba aquí cualquier detalle relevante..."></textarea>
-                        </div>
-                    </div>
-
-                    <div class="mt-5 d-flex gap-2 justify-content-center">
-                        <button type="button" @click="guardarInscripcion" class="btn btn-primary px-5">
-                            <i class="bi bi-save me-2"></i>GUARDAR INSCRIPCIÓN
-                        </button>
-                        <button type="button" @click="limpiarFormulario" class="btn btn-warning px-4">
-                            <i class="bi bi-plus-circle me-2"></i>NUEVO
-                        </button>
-                        <button type="button" @click="buscarInscripcion" class="btn btn-success px-4">
-                            <i class="bi bi-search me-2"></i>BUSCAR
-                        </button>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     `

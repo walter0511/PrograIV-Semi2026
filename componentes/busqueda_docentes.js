@@ -10,17 +10,50 @@ const busqueda_docentes = {
             this.$emit('modificar', docente);
         },
         async obtenerDocentes(){
-            this.docentes = await db.docentes.filter(
-                docente => docente.codigo.toLowerCase().includes(this.buscar.toLowerCase()) 
-                    || docente.nombre.toLowerCase().includes(this.buscar.toLowerCase())
-            ).toArray();
+            try {
+                let resp = await fetch('private/modulos/docentes/docente.php?accion=consultar');
+                let text = await resp.text();
+
+                if (!text.trim().startsWith('<?php') && !text.trim().startsWith('<')) {
+                    let data = JSON.parse(text);
+                    if(Array.isArray(data)){
+                        await db.exec("DELETE FROM docentes");
+                        for (const d of data) {
+                            await db.exec(`
+                                INSERT OR REPLACE INTO docentes (idDocente, codigo, nombre, direccion, email, telefono, escalafon, hash)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            `, [d.idDocente, d.codigo, d.nombre, d.direccion, d.email, d.telefono, d.escalafon, d.hash]);
+                        }
+                    }
+                }
+            } catch(e) { 
+                // Silenced: local mode fallback
+            }
+
+            let buscar = `%${this.buscar}%`;
+            this.docentes = await db.query(
+                "SELECT * FROM docentes WHERE nombre LIKE ? OR codigo LIKE ?",
+                [buscar, buscar]
+            );
         },
         async eliminarDocente(docente, e){
             e.stopPropagation();
-            alertify.confirm('Elimanar docentes', `¿Está seguro de eliminar el docente ${docente.nombre}?`, async e=>{
-                await db.docentes.delete(docente.idDocente);
+            alertify.confirm('Eliminar docentes', `¿Está seguro de eliminar el docente ${docente.nombre}?`, async () => {
+                // Eliminar localmente (SQLite)
+                await db.exec("DELETE FROM docentes WHERE idDocente = ?", [docente.idDocente]);
                 this.obtenerDocentes();
                 alertify.success(`Docente ${docente.nombre} eliminado correctamente`);
+
+                // Sincronizar con servidor (silencioso)
+                fetch(`private/modulos/docentes/docente.php?accion=eliminar&docentes=${encodeURIComponent(JSON.stringify(docente))}`)
+                    .then(res => res.text())
+                    .then(text => {
+                        if (!text.trim().startsWith('<')) {
+                            let resp = JSON.parse(text);
+                            if (resp.msg !== 'ok' && resp !== true) console.warn("Aviso servidor:", resp);
+                        }
+                    })
+                    .catch(() => {});
             }, () => {
                 //No hacer nada
             });

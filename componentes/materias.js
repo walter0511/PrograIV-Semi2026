@@ -32,16 +32,23 @@ const materias = {
                 nombre: this.materia.nombre,
                 uv: this.materia.uv,
             };
-            this.buscar = datos.codigo;
-            //await this.obtenerMaterias();
-
-            if(this.data_materias.length > 0 && this.accion=='nuevo'){
-                alertify.error(`El codigo del materia ya existe, ${this.data_materias[0].nombre}`);
-                return; //Termina la ejecucion de la funcion
+            
+            if(this.accion == 'nuevo'){
+                let existe = await db.query("SELECT * FROM materias WHERE codigo = ?", [datos.codigo]);
+                if(existe.length > 0){
+                    alertify.error(`El codigo de la materia ya existe: ${existe[0].nombre}`);
+                    return;
+                }
             }
-            db.materias.put(datos);
+
+            datos.hash = typeof sha256 !== 'undefined' ? sha256(JSON.stringify(datos)) : '';
+            
+            await db.exec(`
+                INSERT OR REPLACE INTO materias (idMateria, codigo, nombre, uv, hash)
+                VALUES (?, ?, ?, ?, ?)
+            `, [datos.idMateria, datos.codigo, datos.nombre, datos.uv, datos.hash]);
+
             this.limpiarFormulario();
-            //this.obtenerMaterias();
             alertify.success(`Materia ${datos.nombre} guardada correctamente`);
         },
         getId(){
@@ -56,38 +63,46 @@ const materias = {
         },
     },
     template: `
-        <div class="row justify-content-center view-enter">
-            <div class="col-12 col-lg-8">
-                <form id="frmMaterias" @submit.prevent="guardarMateria" @reset.prevent="limpiarFormulario" class="glass-card">
-                    <div class="card-header">
-                        <i class="bi bi-book me-2"></i>REGISTRO DE MATERIAS
-                    </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label text-secondary small fw-bold">CÓDIGO</label>
-                            <input placeholder="Ej: MAT-101" required v-model="materia.codigo" type="text" class="form-control">
+        <div class="row">
+            <div class="col-6">
+                <form id="frmMaterias" @submit.prevent="guardarMateria" @reset.prevent="limpiarFormulario">
+                    <div class="card text-bg-dark mb-3" style="max-width: 36rem;">
+                        <div class="card-header">REGISTRO DE MATERIAS</div>
+                        <div class="card-body">
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    CÓDIGO:
+                                </div>
+                                <div class="col-4">
+                                    <input placeholder="codigo" required v-model="materia.codigo" type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    NOMBRE:
+                                </div>
+                                <div class="col-8">
+                                    <input placeholder="nombre" required v-model="materia.nombre" type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row p-1">
+                                <div class="col-3">
+                                    UV:
+                                </div>
+                                <div class="col-3">
+                                    <input placeholder="uv" required v-model="materia.uv" type="number" class="form-control">
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-8">
-                            <label class="form-label text-secondary small fw-bold">NOMBRE DE LA MATERIA</label>
-                            <input placeholder="Nombre de la asignatura" required v-model="materia.nombre" type="text" class="form-control">
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col text-center">
+                                    <button type="submit" id="btnGuardarMateria" class="btn btn-primary">GUARDAR</button>
+                                    <button type="reset" id="btnCancelarMateria" class="btn btn-warning">NUEVO</button>
+                                    <button type="button" @click="buscarMateria" id="btnBuscarMateria" class="btn btn-success">BUSCAR</button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-secondary small fw-bold">UNIDADES VALORATIVAS (UV)</label>
-                            <input placeholder="Ej: 4" required v-model="materia.uv" type="number" class="form-control">
-                        </div>
-                    </div>
-
-                    <div class="mt-5 d-flex gap-2 justify-content-center">
-                        <button type="submit" class="btn btn-primary px-5">
-                            <i class="bi bi-save me-2"></i>GUARDAR
-                        </button>
-                        <button type="reset" class="btn btn-warning px-4">
-                            <i class="bi bi-plus-circle me-2"></i>NUEVO
-                        </button>
-                        <button type="button" @click="buscarMateria" class="btn btn-success px-4">
-                            <i class="bi bi-search me-2"></i>BUSCAR
-                        </button>
                     </div>
                 </form>
             </div>
