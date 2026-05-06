@@ -6,10 +6,10 @@
             @reset.prevent="limpiarFormulario"
         >
             <div class="card shadow-sm border-0" style="border-radius: 12px; overflow: hidden; min-width: 420px;">
-                <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                <div class="card-header text-white py-2" style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); border: none;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="fw-semibold" style="font-size: 0.95rem; letter-spacing: 1px;">
-                            📋 REGISTRO DE DOCENTES
+                            🎓 REGISTRO DE DOCENTES
                         </div>
                         <div>
                             <button
@@ -54,7 +54,7 @@
                 </div>
                 <div class="card-footer bg-light border-0 px-4 py-3">
                     <div class="d-flex justify-content-center gap-2">
-                        <button type="submit" id="btnGuardarDocente" class="btn btn-sm text-white px-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 20px;">
+                        <button type="submit" id="btnGuardarDocente" class="btn btn-sm text-white px-4" style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); border: none; border-radius: 20px;">
                             💾 Guardar
                         </button>
                         <button type="reset" id="btnNuevoDocente" class="btn btn-sm btn-outline-secondary px-4" style="border-radius: 20px;">
